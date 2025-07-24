@@ -2,8 +2,8 @@ streamlit
 openai
 whisper
 whisperx
-torch==2.2.2
-torchaudio==2.2.2
+torch
+torchaudio
 transformers
 pydub
 librosa
@@ -11,4 +11,4 @@ numpy
 soundfile
 fpdf
 googletrans==4.0.0-rc1
-ffmpeg-python
+language-tool-python
