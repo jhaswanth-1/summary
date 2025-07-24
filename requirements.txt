@@ -1,0 +1,13 @@
+streamlit
+openai
+whisper
+whisperx
+torch
+torchaudio
+transformers
+pydub
+librosa
+numpy
+soundfile
+fpdf
+googletrans==4.0.0-rc1
