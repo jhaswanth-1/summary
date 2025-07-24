@@ -18,7 +18,7 @@ from whisperx.diarize import DiarizationPipeline
 from fpdf import FPDF
 from datetime import datetime
 from openai import OpenAI
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import base64
 
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
@@ -167,7 +167,7 @@ Here is the AI-generated summary to refine
         if choose_lang != "None" and human_summary:
             try:
                 translator = Translator()
-                translated = translator.translate(human_summary, src='en', dest=choose_lang)
+                translated = Googletranslator.translate(human_summary, src='en', dest=choose_lang)
                 translated_summary = translated.text
                 st.text_area("Translated Summary", translated_summary, height=200)
             except Exception as e:
