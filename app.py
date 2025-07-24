@@ -65,8 +65,8 @@ if audio is not None:
             with st.spinner("Identifying speakers..."):
                 try:
                     st.subheader("Speaker Diarization is being implemented")
-                    model = whisperx.load_model("large-v2", device="cuda")
-                    device = "cuda"
+                    model = whisperx.load_model("large-v2", device="cpu", compute_type="int8")
+                    device = "cpu"
                     diarization_model = DiarizationPipeline(
                         use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
                     diarization_segments = diarization_model("denoised.wav")
