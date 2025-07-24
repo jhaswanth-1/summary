@@ -17,7 +17,6 @@ import whisperx
 from whisperx.diarize import DiarizationPipeline
 from fpdf import FPDF
 from datetime import datetime
-import language_tool_python
 from openai import OpenAI
 from googletrans import Translator
 import base64
