@@ -25,39 +25,61 @@ st.markdown(
     """
     <style>
     .stApp {
-        background: #fafafa;
+        background-color: #151515 !important;
+        min-height: 100vh;
+    }
+    .main > div {
+        background: rgba(30, 30, 30, 0.96);
+        border-radius: 16px;
+        box-shadow: 0 6px 24px 0 rgba(125, 111, 152, 0.11);
+        margin: 2rem auto;
+        padding: 2.2rem 2rem 1.5rem 2rem;
+        max-width: 650px;
     }
     h1, .stMarkdown h1 {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        color: #34374c;
+        font-family: 'Playfair Display', serif;
+        background: linear-gradient(90deg, #d3cbb8 0%, #7952b3 94%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-top: 0.5em;
-        margin-bottom: 1em;
-        font-size: 2.3rem;
+        font-size: 2.6rem;
         font-weight: 700;
+        margin-top: 1.2em;
+        margin-bottom: 1.3em;
         letter-spacing: 1px;
     }
     .stButton button {
-        background: #34374c;
-        color: #fafafa;
-        border-radius: 6px;
-        padding: 0.4em 1.2em;
-        font-size: 1.04rem;
+        color: #fff;
+        background: linear-gradient(90deg, #a770ef 0%, #f6d365 100%);
         border: none;
-        margin: 1em auto;
-        display: block;
+        border-radius: 8px;
+        padding: 0.5em 1.7em;
+        font-size: 1.1rem;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        box-shadow: 0 2px 10px rgba(159,123,240,0.14);
+        transition: 0.3s all;
     }
+    .stButton button:hover {
+        background: linear-gradient(90deg, #f6d365 0%, #a770ef 100%);
+        color: #2f2f2f;
+        box-shadow: 0 6px 16px rgba(159,123,240,0.20);
+        transform: translateY(-2px) scale(1.02);
+    }
+
+    /* Remove Streamlit menu/footer/header */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 st.image(
-    "https://images.pexels.com/photos/3183183/pexels-photo-3183183.jpeg?_gl=1*kqfgom*_ga*MTg2MzU5MzM5OC4xNzUzMzY5OTg5*_ga_8JE65Q40S6*czE3NTMzNjk5ODgkbzEkZzEkdDE3NTMzNzAwMjMkajI1JGwwJGgw",
+    "https://images.pexels.com/photos/3183183/pexels-photo-3183183.jpeg?_gl=1*vd42er*_ga*MTg2MzU5MzM5OC4xNzUzMzY5OTg5*_ga_8JE65Q40S6*czE3NTMzNjk5ODgkbzEkZzEkdDE3NTMzNzAwMjMkajI1JGwwJGgw",
     use_column_width=False,
-    width=125
+    width=330,
+    caption="Your classic workspace"
 )
-
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 st.title("Automatic Meeting Notes Generator ")
 
