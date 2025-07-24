@@ -69,7 +69,7 @@ if audio is not None:
                     model = whisperx.load_model("large-v2", device="cuda")
                     device = "cuda"
                     diarization_model = DiarizationPipeline(
-                        use_auth_token="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", device=device)
+                        use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
                     diarization_segments = diarization_model("denoised.wav")
                     assign_speakers = whisperx.assign_word_speakers(diarization_segments, result)
 
@@ -119,7 +119,7 @@ Transcript:
                 try:
                     client = OpenAI(
                         base_url="https://api.together.xyz/v1",
-                        api_key="a538d9472af1c49e5bd4924e9b802d370df036afdc48afe64b429450725dcc79"
+                        api_key=st.secrets["TOGETHER_API_KEY"]
                     )
 
                     response = client.chat.completions.create(
