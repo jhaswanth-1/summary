@@ -1,8 +1,8 @@
 streamlit
 openai
 transformers
-torch==2.1.0
-torchaudio==2.1.0
+torch==2.5.1
+torchaudio==2.5.1
 pydub
 librosa
 numpy
