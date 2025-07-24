@@ -76,7 +76,7 @@ st.markdown(
 )
 st.image(
     "https://images.pexels.com/photos/3183183/pexels-photo-3183183.jpeg?_gl=1*vd42er*_ga*MTg2MzU5MzM5OC4xNzUzMzY5OTg5*_ga_8JE65Q40S6*czE3NTMzNjk5ODgkbzEkZzEkdDE3NTMzNzAwMjMkajI1JGwwJGgw",
-    use_column_width=False,
+    use_container_width=True,
     width=330,
     caption="Your classic workspace"
 )
