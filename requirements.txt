@@ -1,9 +1,7 @@
 streamlit
 openai
-whisper
-whisperx
-torch
-torchaudio
+torch==2.2.2
+torchaudio==2.2.2
 transformers
 pydub
 librosa
@@ -11,4 +9,6 @@ numpy
 soundfile
 fpdf
 googletrans==4.0.0-rc1
-language-tool-python
+ffmpeg-python
+whisper
+whisperx @ git+https://github.com/m-bain/whisperx.git
