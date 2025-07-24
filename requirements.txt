@@ -10,6 +10,6 @@ torch==2.5.1
 torchaudio==2.5.1
 transformers
 openai>=1.3.8
-googletrans==4.0.0-rc1
+deep-translator
 fpdf
 numpy
