@@ -13,3 +13,4 @@ openai>=1.3.8
 deep-translator
 fpdf
 numpy
+openai-whisper
