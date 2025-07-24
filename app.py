@@ -7,17 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1Paw2ClSI4assylE7J7pEIdJJE7R4yVEf
 """
 
-!pip install openai==1.3.9
-!pip install httpx==0.24.1
-!pip install httpcore==0.16.3
-!pip install googletrans==3.1.0a0
-!pip install -U openai-whisper
-!apt-get install -y ffmpeg
-!pip install git+https://github.com/m-bain/whisperx.git
-!pip install noisereduce
-!pip install fpdf
-!pip install language-tool-python
-!pip install streamlit
+
 
 import streamlit as st
 import noisereduce as nr
