@@ -25,21 +25,20 @@ st.markdown(
     """
     <style>
     .stApp {
-        background:#F0F4F8;
-        min-height: 100vh;
+        background: #fafafa;
     }
     h1, .stMarkdown h1 {
-        font-family: 'Montserrat','Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #d3cbb8;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #34374c;
         text-align: center;
         margin-top: 0.5em;
         margin-bottom: 1em;
         font-size: 2.3rem;
         font-weight: 700;
-        letter-spacing: 1.2px;
+        letter-spacing: 1px;
     }
     .stButton button {
-        background:#2774AE;
+        background: #34374c;
         color: #fafafa;
         border-radius: 6px;
         padding: 0.4em 1.2em;
@@ -56,7 +55,7 @@ st.markdown(
 st.image(
     "https://images.pexels.com/photos/3183183/pexels-photo-3183183.jpeg?_gl=1*kqfgom*_ga*MTg2MzU5MzM5OC4xNzUzMzY5OTg5*_ga_8JE65Q40S6*czE3NTMzNjk5ODgkbzEkZzEkdDE3NTMzNzAwMjMkajI1JGwwJGgw",
     use_column_width=False,
-    width=320
+    width=125
 )
 
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
