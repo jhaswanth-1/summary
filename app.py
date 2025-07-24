@@ -21,6 +21,44 @@ from openai import OpenAI
 from deep_translator import GoogleTranslator
 import base64
 
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background:#F0F4F8;
+        min-height: 100vh;
+    }
+    h1, .stMarkdown h1 {
+        font-family: 'Montserrat','Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #d3cbb8;
+        text-align: center;
+        margin-top: 0.5em;
+        margin-bottom: 1em;
+        font-size: 2.3rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+    }
+    .stButton button {
+        background:#2774AE;
+        color: #fafafa;
+        border-radius: 6px;
+        padding: 0.4em 1.2em;
+        font-size: 1.04rem;
+        border: none;
+        margin: 1em auto;
+        display: block;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.image(
+    "https://images.pexels.com/photos/3183183/pexels-photo-3183183.jpeg?_gl=1*kqfgom*_ga*MTg2MzU5MzM5OC4xNzUzMzY5OTg5*_ga_8JE65Q40S6*czE3NTMzNjk5ODgkbzEkZzEkdDE3NTMzNzAwMjMkajI1JGwwJGgw",
+    use_column_width=False,
+    width=320
+)
+
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 st.title("Automatic Meeting Notes Generator ")
 
