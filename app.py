@@ -7,8 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1Paw2ClSI4assylE7J7pEIdJJE7R4yVEf
 """
 
-
-
 import streamlit as st
 import noisereduce as nr
 import librosa
@@ -22,70 +20,72 @@ from datetime import datetime
 import language_tool_python
 from openai import OpenAI
 from googletrans import Translator
+import base64
 
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 st.title("Automatic Meeting Notes Generator ")
-audio= st.file_uploader("Upload a meeting audio file", type=["wav", "mp3"])
+
+audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3"])
+
 if audio is not None:
     with open("input.wav", "wb") as f:
         f.write(audio.read())
     st.success("Audio uploaded successfully!")
 
-#this  is noise reduction#
-    if st.button(" Start Processing"):
-      with st.spinner("Reducing noise and transcribing..."):
+    if st.button("Start Processing"):
+        with st.spinner("Reducing noise and transcribing..."):
+            try:
+                audio_data, sample_rate = librosa.load("input.wav", sr=None)
+                chunk_duration_sec = 60
+                chunk_samples = int(chunk_duration_sec * sample_rate)
+                noise = audio_data[0:int(sample_rate * 1)]
+                denoised_audio = []
+
+                for start in range(0, len(audio_data), chunk_samples):
+                    end = min(start + chunk_samples, len(audio_data))
+                    curr_chunk = audio_data[start:end]
+                    reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise)
+                    denoised_audio.append(reduced_chunk)
+
+                denoised_audio = np.concatenate(denoised_audio)
+                sf.write("denoised.wav", denoised_audio, sample_rate)
+
+            except Exception as e:
+                st.error(f"Noise reduction failed: {e}")
+
         try:
-          audio, sample_rate = librosa.load("input.wav", sr=None)
-chunk_duration_sec = 60
-chunk_samples = int(chunk_duration_sec * sample_rate)
+            st.subheader("Transcribing audio...")
+            model = whisper.load_model("tiny")
+            result = model.transcribe("denoised.wav", task="translate")
+            st.text_area("Detected language:", result["language"])
+            st.text_area("Transcript", result["text"], height=200)
+        except Exception as e:
+            st.error(f"Transcription failed: {e}")
 
-noise = audio[0 : int(sample_rate * 1)]
+        if st.button("Run Speaker Diarization"):
+            with st.spinner("Identifying speakers..."):
+                try:
+                    st.subheader("Speaker Diarization is being implemented")
+                    model = whisperx.load_model("large-v2", device="cuda")
+                    device = "cuda"
+                    diarization_model = DiarizationPipeline(
+                        use_auth_token="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", device=device)
+                    diarization_segments = diarization_model("denoised.wav")
+                    assign_speakers = whisperx.assign_word_speakers(diarization_segments, result)
 
-denoised_audio = []
+                    diarization_text = ""
+                    for seg in assign_speakers["segments"]:
+                        speaker_label = seg.get('speaker', 'Unknown')
+                        diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
 
-for start in range(0, len(audio), chunk_samples):
-    end = min(start + chunk_samples, len(audio))
-    curr_chunk = audio[start:end]
-    reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise)
-    denoised_audio.append(reduced_chunk)
+                    st.success("Diarization Complete!")
+                    st.text_area("Speaker Diarization", diarization_text, height=300)
 
-denoised_audio = np.concatenate(denoised_audio)
+                except Exception as e:
+                    st.error(f"Speaker diarization failed: {e}")
 
-sf.write("denoised.wav", denoised_audio, sample_rate)
-except Exception as e:
-  st.error(f"Translation failed: {e}")
-
-#transcription and translation to english#
-st.subheader("Transcribing audio...")
-model = whisper.load_model("tiny")
-result = model.transcribe("denoised.wav", task="translate")
-st.text_area("Detected language:", result["language"])
-st.text_area(" Transcript", result["text"], height=200)
-
-#speaker diarization and speaker assigning part#
-if st.button(" Run Speaker Diarization"):
-    with st.spinner("Identifying speakers..."):
-      try:
-      st.sub_header("Speaker Diarization is been implementing ")
-model = whisperx.load_model("large-v2", device="cuda")
-device = "cuda"
-diarizationa_model = DiarizationPipeline(use_auth_token="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",device=device)
-diarization_segments = diarizationa_model("denoised.wav")
-assign_speakers = whisperx.assign_word_speakers(diarization_segments, result)
-except Exception as e:
-        st.error(f"Translation failed: {e}")
-
-diarizition =" "
-for seg in assign_speakers["segments"]:
-    speaker_label = seg.get('speaker', 'Unknown')
-    diarizition+= f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
-st.success(" Diarization Complete!")
-st.text_area("Speaker diarization", diarizition , height=300)
-
-#summarization with llama model#
-
-long_text = result["text"]
-prompt1 = f"""
+        long_text = result["text"]
+        prompt1 = f"""
 You are a professional meeting summarizer and executive assistant.
 
 Given the following transcript, generate a **high-quality, structured meeting summary** in natural, flowing paragraphs that reads as if written by a human assistant. Your summary should cover the following sections clearly and cohesively:
@@ -111,27 +111,25 @@ Transcript:
 {long_text}
 """
 
-# Summarization
-if st.button("Generate Summary"):
-    st.subheader("Summarization in progress...")
+        translated_summary = None
+        human_summary = None
 
-    with st.spinner("Generating summary with LLaMA-3..."):
-      try:
-        client = OpenAI(
-    base_url="https://api.together.xyz/v1",
-    api_key="a538d9472af1c49e5bd4924e9b802d370df036afdc48afe64b429450725dcc79"
-)
+        if st.button("Generate Summary"):
+            with st.spinner("Generating summary with LLaMA-3..."):
+                try:
+                    client = OpenAI(
+                        base_url="https://api.together.xyz/v1",
+                        api_key="a538d9472af1c49e5bd4924e9b802d370df036afdc48afe64b429450725dcc79"
+                    )
 
-response = client.chat.completions.create(
-    model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-    messages=[
-        {"role": "user", "content": prompt1  }
-   ],
-    max_tokens=1100,
-    temperature=0.3,
-)
+                    response = client.chat.completions.create(
+                        model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+                        messages=[{"role": "user", "content": prompt1}],
+                        max_tokens=1100,
+                        temperature=0.3,
+                    )
 
-print(response.choices[0].message.content)second_prompt =f"""
+                    second_prompt = f"""
 You are a skilled executive assistant refining the output of an AI-generated meeting summary.
 
 Your task is to improve tone, flow, and clarity without losing structure or information. You should polish the writing to make it sound more natural, more human, and professional – as if it’s being prepared for a senior manager or team leader.
@@ -149,82 +147,74 @@ Here is the AI-generated summary to refine
 {response.choices[0].message.content}
 """
 
-human_response = client.chat.completions.create(
-    model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-    messages=[
-        {"role": "user", "content": second_prompt  }
-   ],
-    max_tokens=4096,
-    temperature=0.3,
-)
-human_summary=human_response.choices[0].message.content
-st.success("Summarization complete!")
-st.subheader("Humanized Summary")
-st.text_area("Human-style Summary", human_summary, height=250)
-except Exception as e:
-        st.error(f"Translation failed: {str(e)}")
+                    human_response = client.chat.completions.create(
+                        model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+                        messages=[{"role": "user", "content": second_prompt}],
+                        max_tokens=4096,
+                        temperature=0.3,
+                    )
 
-# Translate the humanized summary into selected language (optional)
-st.subheader("Step 3: Translate (Optional)")
-choose_lang = st.selectbox("Choose a language", ["None", "hi", "te", "ta", "kn", "mr", "bn"])  # ISO 639-1 codes
+                    human_summary = human_response.choices[0].message.content
+                    st.success("Summarization complete!")
+                    st.subheader("Humanized Summary")
+                    st.text_area("Human-style Summary", human_summary, height=250)
 
-if choose_lang != "None":
-    try:
-        translator = Translator()
-        translated = translator.translate(human_summary, src='en', dest=choose_lang)
-        st.text_area("Translated Summary", translated.text, height=200)
-    except Exception as e:
-        st.error(f"Translation failed: {str(e)}")
+                except Exception as e:
+                    st.error(f"Summarization failed: {str(e)}")
 
-#  Download the summary as PDF
-st.subheader("Download the PDF")
+        st.subheader("Step 3: Translate (Optional)")
+        choose_lang = st.selectbox("Choose a language", ["None", "hi", "te", "ta", "kn", "mr", "bn"])
 
-from fpdf import FPDF
-from datetime import datetime
-import base64
+        if choose_lang != "None" and human_summary:
+            try:
+                translator = Translator()
+                translated = translator.translate(human_summary, src='en', dest=choose_lang)
+                translated_summary = translated.text
+                st.text_area("Translated Summary", translated_summary, height=200)
+            except Exception as e:
+                st.error(f"Translation failed: {str(e)}")
 
-class PDF(FPDF):
-    def header(self):
-        self.set_font("Helvetica", "B", 16)
-        self.set_text_color(40, 40, 100)
-        self.cell(0, 10, "Automated Meeting Summary", ln=True, align="C")
-        self.set_font("Helvetica", "", 12)
-        self.set_text_color(100, 100, 100)
-        self.cell(0, 10, f"Generated on {datetime.now().strftime('%d %b %Y, %I:%M %p')}", ln=True, align="C")
-        self.ln(5)
+        st.subheader("Download the PDF")
 
-    def section_title(self, title):
-        self.ln(10)
-        self.set_font("Helvetica", "B", 14)
-        self.set_text_color(30, 30, 30)
-        self.cell(0, 10, title, ln=True)
-        self.set_draw_color(180, 180, 180)
-        self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(4)
+        class PDF(FPDF):
+            def header(self):
+                self.set_font("Helvetica", "B", 16)
+                self.set_text_color(40, 40, 100)
+                self.cell(0, 10, "Automated Meeting Summary", ln=True, align="C")
+                self.set_font("Helvetica", "", 12)
+                self.set_text_color(100, 100, 100)
+                self.cell(0, 10, f"Generated on {datetime.now().strftime('%d %b %Y, %I:%M %p')}", ln=True, align="C")
+                self.ln(5)
 
-    def section_body(self, text):
-        self.set_font("Helvetica", "", 12)
-        self.set_text_color(50, 50, 50)
-        self.multi_cell(0, 8, text)
-        self.ln(2)
+            def section_title(self, title):
+                self.ln(10)
+                self.set_font("Helvetica", "B", 14)
+                self.set_text_color(30, 30, 30)
+                self.cell(0, 10, title, ln=True)
+                self.set_draw_color(180, 180, 180)
+                self.line(10, self.get_y(), 200, self.get_y())
+                self.ln(4)
 
-# Only proceed if text exists
-if 'human_response' in locals():
-    summary_text = human_response.choices[0].message.content
+            def section_body(self, text):
+                self.set_font("Helvetica", "", 12)
+                self.set_text_color(50, 50, 50)
+                self.multi_cell(0, 8, text)
+                self.ln(2)
 
-    pdf = PDF()
-    pdf.add_page()
-    pdf.section_title("AUTOMATED MEETING SUMMARY")
-    pdf.section_body(summary_text)
+        if human_summary:
+            pdf = PDF()
+            pdf.add_page()
+            pdf.section_title("AUTOMATED MEETING SUMMARY")
+            pdf.section_body(translated_summary if translated_summary else human_summary)
 
-    # Save to a temporary file
-    pdf.output("meeting_summary.pdf")
-    with open("meeting_summary.pdf", "rb") as f:
-        st.download_button("Download PDF", f, file_name="meeting_summary.pdf", mime='application/pdf')
+            pdf.output("meeting_summary.pdf")
+            with open("meeting_summary.pdf", "rb") as f:
+                st.download_button("Download PDF", f, file_name="meeting_summary.pdf", mime='application/pdf')
 
-    st.success("Done! Your meeting summary is ready.")
-else:
-    st.warning("Summary not found. Run the summarization step first.")
+            st.success("Done! Your meeting summary is ready.")
+        else:
+            st.warning("Summary not found. Run the summarization step first.")
+
 
 #to correct the grammar mistakes#
  #text=human_response.choices[0].message.content
