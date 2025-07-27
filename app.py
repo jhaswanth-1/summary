@@ -83,70 +83,118 @@ st.image(
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 st.title("Automatic Meeting Notes Generator ")
 
+if 'step' not in st.session_state:
+    st.session_state.step = 1        
+if 'transcript' not in st.session_state:
+    st.session_state.transcript = None 
+if 'result' not in st.session_state:
+    st.session_state.result = None    
+if 'diarization_text' not in st.session_state:
+    st.session_state.diarization_text = None
+if 'human_summary' not in st.session_state:
+    st.session_state.human_summary = None
+if 'translated_summary' not in st.session_state:
+    st.session_state.translated_summary = None
+
 audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3"])
 
-if audio is not None:
-    with open("input.wav", "wb") as f:
-        f.write(audio.read())
-    st.success("Audio uploaded successfully!")
 
-    if st.button("Start Processing"):
-        with st.spinner("Reducing noise and transcribing..."):
-            try:
-                audio_data, sample_rate = librosa.load("input.wav", sr=None)
-                chunk_duration_sec = 60
-                chunk_samples = int(chunk_duration_sec * sample_rate)
-                noise = audio_data[0:int(sample_rate * 1)]
-                denoised_audio = []
+if st.session_state.step == 1:
+    if audio is not None:
+        with open("input.wav", "wb") as f:
+            f.write(audio.read())
+        st.success("Audio uploaded successfully!")
 
-                for start in range(0, len(audio_data), chunk_samples):
-                    end = min(start + chunk_samples, len(audio_data))
-                    curr_chunk = audio_data[start:end]
-                    reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise)
-                    denoised_audio.append(reduced_chunk)
-
-                denoised_audio = np.concatenate(denoised_audio)
-                sf.write("denoised.wav", denoised_audio, sample_rate)
-
-            except Exception as e:
-                st.error(f"Noise reduction failed: {e}")
-
-        try:
-            st.subheader("Transcribing audio...")
-            model = whisper.load_model("tiny")
-            result = model.transcribe("denoised.wav", task="translate")
-            st.text_area("Detected language:", result["language"])
-            st.text_area("Transcript", result["text"], height=200)
-        except Exception as e:
-            st.error(f"Transcription failed: {e}")
-
-        if st.button("Run Speaker Diarization"):
-            with st.spinner("Identifying speakers..."):
+        if st.button("Start Processing"):
+            with st.spinner("Reducing noise and transcribing..."):
                 try:
-                    st.subheader("Speaker Diarization is being implemented")
-                    model = whisperx.load_model("large-v2", device="cpu", compute_type="int8")
-                    device = "cpu"
-                    diarization_model = DiarizationPipeline(
-                        use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
-                    diarization_segments = diarization_model("denoised.wav")
-                    assign_speakers = whisperx.assign_word_speakers(diarization_segments, result)
+                    audio_data, sample_rate = librosa.load("input.wav", sr=None)
+                    chunk_duration_sec = 60
+                    chunk_samples = int(chunk_duration_sec * sample_rate)
+                    noise = audio_data[0:int(sample_rate * 1)]
+                    denoised_audio = []
 
-                    diarization_text = ""
-                    for seg in assign_speakers["segments"]:
-                        speaker_label = seg.get('speaker', 'Unknown')
-                        diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
+                    for start in range(0, len(audio_data), chunk_samples):
+                        end = min(start + chunk_samples, len(audio_data))
+                        curr_chunk = audio_data[start:end]
+                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise)
+                        denoised_audio.append(reduced_chunk)
 
-                    st.success("Diarization Complete!")
-                    st.text_area("Speaker Diarization", diarization_text, height=300)
-
+                    denoised_audio = np.concatenate(denoised_audio)
+                    sf.write("denoised.wav", denoised_audio, sample_rate)
                 except Exception as e:
-                    st.error(f"Speaker diarization failed: {e}")
+                    st.error(f"Noise reduction failed: {e}")
+                    st.stop()  
+            try:
+                st.subheader("Transcribing audio...")
+                model = whisper.load_model("tiny")
+                transcription_result = model.transcribe("denoised.wav", task="translate")
 
-        long_text = result["text"]
+               
+                st.session_state.result = transcription_result          
+                st.session_state.transcript = transcription_result["text"]
+                
+                st.session_state.step = 2
+                st.experimental_rerun() 
+            except Exception as e:
+                st.error(f"Transcription failed: {e}")
+
+
+elif st.session_state.step == 2:  
+    if st.session_state.result is not None:
+        st.text_area("Detected language:", st.session_state.result["language"])
+        st.text_area("Transcription", st.session_state.transcript, height=200)
+    else:
+        st.warning("No transcription result found. Please restart processing.")
+        if st.button("Go back to upload"):
+            st.session_state.step = 1
+            st.experimental_rerun()
+
+    if st.button("Run Speaker Diarization"):
+        with st.spinner("Identifying speakers..."):
+            try:
+                import whisperx
+                from whisperx import DiarizationPipeline
+
+                model = whisperx.load_model("large-v2", device="cpu", compute_type="int8")
+                device = "cpu"
+                diarization_model = DiarizationPipeline(
+                    use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
+                diarization_segments = diarization_model("denoised.wav")
+                assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
+
+                diarization_text = ""
+                for seg in assign_speakers["segments"]:
+                    speaker_label = seg.get('speaker', 'Unknown')
+                    diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
+
+                st.session_state.diarization_text = diarization_text
+                st.session_state.step = 3
+                st.experimental_rerun()  
+                
+            except Exception as e:
+                st.error(f"Speaker diarization failed: {e}")
+
+    if st.session_state.diarization_text:
+        st.subheader("Speaker Diarization Result")
+        st.text_area("", st.session_state.diarization_text, height=300)
+
+
+elif st.session_state.step == 3:
+    if st.session_state.transcript is None:
+        st.error("Transcript not found, please upload and process audio again.")
+        if st.button("Go back to upload"):
+            st.session_state.step = 1
+            st.experimental_rerun()
+    else:
+        st.subheader("Generate meeting summary")
+
         prompt1 = f"""
 You are a professional meeting summarizer and executive assistant.
 
+
 Given the following transcript, generate a **high-quality, structured meeting summary** in natural, flowing paragraphs that reads as if written by a human assistant. Your summary should cover the following sections clearly and cohesively:
+
 
 1. **Title** – A concise, descriptive title for the meeting (can include topic or theme).
 2. **Participants** – List the main attendees and their roles (if known).
@@ -157,6 +205,7 @@ Given the following transcript, generate a **high-quality, structured meeting su
 7. **Unresolved Questions or Follow-Ups** – Mention any issues that require further investigation or discussion.
 8. **Conclusion** – Wrap up with the general outcome or next direction, highlighting achievements or challenges.
 
+
 **Guidelines:**
 - Write in professional, British English.
 - Use well-organised paragraphs, not bullet points unless necessary for clarity (like in Action Items).
@@ -166,31 +215,30 @@ Given the following transcript, generate a **high-quality, structured meeting su
 - If relevant, estimate approximate timestamps for key decisions or moments using context.
 
 Transcript:
-{long_text}
+{st.session_state.transcript}
 """
-
-        translated_summary = None
-        human_summary = None
-
         if st.button("Generate Summary"):
             with st.spinner("Generating summary with LLaMA-3..."):
                 try:
+                    from openai import OpenAI
                     client = OpenAI(
                         base_url="https://api.together.xyz/v1",
                         api_key=st.secrets["TOGETHER_API_KEY"]
                     )
-
                     response = client.chat.completions.create(
                         model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
                         messages=[{"role": "user", "content": prompt1}],
                         max_tokens=1100,
                         temperature=0.3,
                     )
+                    first_summary = response.choices[0].message.content
 
                     second_prompt = f"""
 You are a skilled executive assistant refining the output of an AI-generated meeting summary.
 
+
 Your task is to improve tone, flow, and clarity without losing structure or information. You should polish the writing to make it sound more natural, more human, and professional – as if it’s being prepared for a senior manager or team leader.
+
 
 **Your Goals:**
 - Improve sentence structure and word flow.
@@ -200,10 +248,9 @@ Your task is to improve tone, flow, and clarity without losing structure or info
 - Preserve accuracy of content — don’t invent anything.
 - Keep a professional, business-like tone (British English), but avoid sounding stiff or too generic.
 - Length should be proportionate to a 30-minute meeting.
-
-Here is the AI-generated summary to refine
-{response.choices[0].message.content}
-"""
+                   
+                    {first_summary}
+                    """
 
                     human_response = client.chat.completions.create(
                         model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
@@ -212,27 +259,38 @@ Here is the AI-generated summary to refine
                         temperature=0.3,
                     )
 
-                    human_summary = human_response.choices[0].message.content
-                    st.success("Summarization complete!")
-                    st.subheader("Humanized Summary")
-                    st.text_area("Human-style Summary", human_summary, height=250)
+                    
+                    st.session_state.human_summary = human_response.choices[0].message.content
+                    st.session_state.step = 4
+                    st.experimental_rerun()
 
                 except Exception as e:
                     st.error(f"Summarization failed: {str(e)}")
 
-        st.subheader("Step 3: Translate (Optional)")
+elif st.session_state.step == 4:
+    if st.session_state.human_summary:
+        st.success("Summarization complete!")
+        st.subheader("Humanized Summary")
+        st.text_area("Human-style Summary", st.session_state.human_summary, height=250)
+
         choose_lang = st.selectbox("Choose a language", ["None", "hi", "te", "ta", "kn", "mr", "bn"])
 
-        if choose_lang != "None" and human_summary:
-            try:
-                translator = Translator()
-                translated = Googletranslator.translate(human_summary, src='en', dest=choose_lang)
-                translated_summary = translated.text
-                st.text_area("Translated Summary", translated_summary, height=200)
-            except Exception as e:
-                st.error(f"Translation failed: {str(e)}")
+        if choose_lang != "None":
+            if st.button("Translate Summary"):
+                from googletrans import Translator
+                try:
+                    translator = Translator()
+                    translated = translator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
+                    st.session_state.translated_summary = translated.text
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Translation failed: {str(e)}")
 
-        st.subheader("Download the PDF")
+        if st.session_state.translated_summary:
+            st.text_area("Translated Summary", st.session_state.translated_summary, height=200)
+
+        import io
+        from fpdf import FPDF
 
         class PDF(FPDF):
             def header(self):
@@ -259,19 +317,20 @@ Here is the AI-generated summary to refine
                 self.multi_cell(0, 8, text)
                 self.ln(2)
 
-        if human_summary:
+        if st.button("Download PDF"):
             pdf = PDF()
             pdf.add_page()
             pdf.section_title("AUTOMATED MEETING SUMMARY")
-            pdf.section_body(translated_summary if translated_summary else human_summary)
+            pdf.section_body(st.session_state.translated_summary if st.session_state.translated_summary else st.session_state.human_summary)
 
-            pdf.output("meeting_summary.pdf")
-            with open("meeting_summary.pdf", "rb") as f:
-                st.download_button("Download PDF", f, file_name="meeting_summary.pdf", mime='application/pdf')
+            pdf_buffer = io.BytesIO()
+            pdf.output(pdf_buffer)
+            pdf_buffer.seek(0)
 
-            st.success("Done! Your meeting summary is ready.")
-        else:
-            st.warning("Summary not found. Run the summarization step first.")
+            st.download_button("Download Summary PDF", data=pdf_buffer, file_name="meeting_summary.pdf", mime='application/pdf')
+
+    else:
+        st.warning("Summary not found. Run the summarization step first.")
 
 
 #to correct the grammar mistakes#
