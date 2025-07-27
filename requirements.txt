@@ -14,3 +14,4 @@ deep-translator
 fpdf
 numpy
 openai-whisper
+ffmpeg
