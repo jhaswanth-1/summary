@@ -150,37 +150,34 @@ elif st.session_state.step == 2:
             st.session_state.step = 1
             st.rerun()
 
-    if st.button("Run Speaker Diarization"):
-        with st.spinner("Identifying speakers..."):
-            try:
-                import whisperx
+    #if st.button("Run Speaker Diarization"):
+       # with st.spinner("Identifying speakers..."):
+           # try:
+              #  model = whisperx.load_model("large-v2", device="cpu")
+               # device = "cpu"
+               # diarization_model = DiarizationPipeline(
+                #    use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
+                #diarization_segments = diarization_model("denoised.wav")
+               # assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
+
+               # diarization_text = ""
+              #  for seg in assign_speakers["segments"]:
+               #     speaker_label = seg.get('speaker', 'Unknown')
+               #     diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
+
+             #   st.session_state.diarization_text = diarization_text
+            #    st.session_state.step = 3
+              #  st.rerun()  
                 
+           # except Exception as e:
+             #   st.error(f"Speaker diarization failed: {e}")
 
-                model = whisperx.load_model("large-v2", device="cpu", compute_type="int8")
-                device = "cpu"
-                diarization_model = DiarizationPipeline(
-                    use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
-                diarization_segments = diarization_model("denoised.wav")
-                assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
-
-                diarization_text = ""
-                for seg in assign_speakers["segments"]:
-                    speaker_label = seg.get('speaker', 'Unknown')
-                    diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
-
-                st.session_state.diarization_text = diarization_text
-                st.session_state.step = 3
-                st.rerun()  
-                
-            except Exception as e:
-                st.error(f"Speaker diarization failed: {e}")
-
-    if st.session_state.diarization_text:
-        st.subheader("Speaker Diarization Result")
-        st.text_area("", st.session_state.diarization_text, height=300)
+   # if st.session_state.diarization_text:
+      #  st.subheader("Speaker Diarization Result")
+       # st.text_area("", st.session_state.diarization_text, height=300)
 
 
-elif st.session_state.step == 3:
+elif st.session_state.step == 2:
     if st.session_state.transcript is None:
         st.error("Transcript not found, please upload and process audio again.")
         if st.button("Go back to upload"):
