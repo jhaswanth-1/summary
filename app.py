@@ -135,7 +135,7 @@ if st.session_state.step == 1:
                 st.session_state.transcript = transcription_result["text"]
                 
                 st.session_state.step = 2
-                st.experimental_rerun() 
+                st.rerun() 
             except Exception as e:
                 st.error(f"Transcription failed: {e}")
 
@@ -148,7 +148,7 @@ elif st.session_state.step == 2:
         st.warning("No transcription result found. Please restart processing.")
         if st.button("Go back to upload"):
             st.session_state.step = 1
-            st.experimental_rerun()
+            st.rerun()
 
     if st.button("Run Speaker Diarization"):
         with st.spinner("Identifying speakers..."):
@@ -170,7 +170,7 @@ elif st.session_state.step == 2:
 
                 st.session_state.diarization_text = diarization_text
                 st.session_state.step = 3
-                st.experimental_rerun()  
+                st.rerun()  
                 
             except Exception as e:
                 st.error(f"Speaker diarization failed: {e}")
@@ -185,7 +185,7 @@ elif st.session_state.step == 3:
         st.error("Transcript not found, please upload and process audio again.")
         if st.button("Go back to upload"):
             st.session_state.step = 1
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.subheader("Generate meeting summary")
 
@@ -262,7 +262,7 @@ Your task is to improve tone, flow, and clarity without losing structure or info
                     
                     st.session_state.human_summary = human_response.choices[0].message.content
                     st.session_state.step = 4
-                    st.experimental_rerun()
+                    st.rerun()
 
                 except Exception as e:
                     st.error(f"Summarization failed: {str(e)}")
@@ -282,7 +282,7 @@ elif st.session_state.step == 4:
                     translator = Translator()
                     translated = translator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
                     st.session_state.translated_summary = translated.text
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Translation failed: {str(e)}")
 
