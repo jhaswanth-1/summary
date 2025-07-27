@@ -89,8 +89,8 @@ if 'transcript' not in st.session_state:
     st.session_state.transcript = None 
 if 'result' not in st.session_state:
     st.session_state.result = None    
-if 'diarization_text' not in st.session_state:
-    st.session_state.diarization_text = None
+#if 'diarization_text' not in st.session_state:
+    #st.session_state.diarization_text = None
 if 'human_summary' not in st.session_state:
     st.session_state.human_summary = None
 if 'translated_summary' not in st.session_state:
@@ -243,8 +243,8 @@ elif st.session_state.step == 3:
             if st.button("Translate Summary"):
                 
                 try:
-                    translator = googleTranslator()
-                    translated = googletranslator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
+                    translator = GoogleTranslator()
+                    translated = translator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
                     st.session_state.translated_summary = translated.text
                     st.rerun()
                 except Exception as e:
