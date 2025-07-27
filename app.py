@@ -150,41 +150,8 @@ elif st.session_state.step == 2:
             st.session_state.step = 1
             st.rerun()
 
-    #if st.button("Run Speaker Diarization"):
-       # with st.spinner("Identifying speakers..."):
-           # try:
-              #  model = whisperx.load_model("large-v2", device="cpu")
-               # device = "cpu"
-               # diarization_model = DiarizationPipeline(
-                #    use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
-                #diarization_segments = diarization_model("denoised.wav")
-               # assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
+st.subheader("Generate meeting summary")
 
-               # diarization_text = ""
-              #  for seg in assign_speakers["segments"]:
-               #     speaker_label = seg.get('speaker', 'Unknown')
-               #     diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
-
-             #   st.session_state.diarization_text = diarization_text
-            #    st.session_state.step = 3
-              #  st.rerun()  
-                
-           # except Exception as e:
-             #   st.error(f"Speaker diarization failed: {e}")
-
-   # if st.session_state.diarization_text:
-      #  st.subheader("Speaker Diarization Result")
-       # st.text_area("", st.session_state.diarization_text, height=300)
-
-
-elif st.session_state.step == 2:
-    if st.session_state.transcript is None:
-        st.error("Transcript not found, please upload and process audio again.")
-        if st.button("Go back to upload"):
-            st.session_state.step = 1
-            st.rerun()
-    else:
-        st.subheader("Generate meeting summary")
 
         prompt1 = f"""
 You are a professional meeting summarizer and executive assistant.
@@ -258,13 +225,13 @@ Your task is to improve tone, flow, and clarity without losing structure or info
 
                     
                     st.session_state.human_summary = human_response.choices[0].message.content
-                    st.session_state.step = 4
+                    st.session_state.step = 3
                     st.rerun()
 
                 except Exception as e:
                     st.error(f"Summarization failed: {str(e)}")
 
-elif st.session_state.step == 4:
+elif st.session_state.step == 3:
     if st.session_state.human_summary:
         st.success("Summarization complete!")
         st.subheader("Humanized Summary")
@@ -274,10 +241,10 @@ elif st.session_state.step == 4:
 
         if choose_lang != "None":
             if st.button("Translate Summary"):
-                from googletrans import Translator
+                
                 try:
-                    translator = Translator()
-                    translated = translator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
+                    translator = googleTranslator()
+                    translated = googletranslator.translate(st.session_state.human_summary, src='en', dest=choose_lang)
                     st.session_state.translated_summary = translated.text
                     st.rerun()
                 except Exception as e:
@@ -335,3 +302,29 @@ elif st.session_state.step == 4:
 #tool = language_tool_python.LanguageTool('en-GB')
 #matches = tool.check(text)
 #corrected_text = language_tool_python.utils.correct(text, matches)
+
+ #if st.button("Run Speaker Diarization"):
+       # with st.spinner("Identifying speakers..."):
+           # try:
+              #  model = whisperx.load_model("large-v2", device="cpu")
+               # device = "cpu"
+               # diarization_model = DiarizationPipeline(
+                #    use_auth_token=st.secrets["HUGGINGFACE_TOKEN"], device=device)
+                #diarization_segments = diarization_model("denoised.wav")
+               # assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
+
+               # diarization_text = ""
+              #  for seg in assign_speakers["segments"]:
+               #     speaker_label = seg.get('speaker', 'Unknown')
+               #     diarization_text += f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}\n"
+
+             #   st.session_state.diarization_text = diarization_text
+            #    st.session_state.step = 3
+              #  st.rerun()  
+                
+           # except Exception as e:
+             #   st.error(f"Speaker diarization failed: {e}")
+
+   # if st.session_state.diarization_text:
+      #  st.subheader("Speaker Diarization Result")
+       # st.text_area("", st.session_state.diarization_text, height=300)
