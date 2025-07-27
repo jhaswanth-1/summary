@@ -154,7 +154,7 @@ elif st.session_state.step == 2:
         with st.spinner("Identifying speakers..."):
             try:
                 import whisperx
-                from whisperx import DiarizationPipeline
+                
 
                 model = whisperx.load_model("large-v2", device="cpu", compute_type="int8")
                 device = "cpu"
