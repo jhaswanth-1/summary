@@ -1,5 +1,5 @@
 streamlit>=1.15.0
-whisperx==3.4.2
+whisperx>=3.2.0,<3.4.0         
 faster-whisper==1.1.1
 soundfile
 pydub
