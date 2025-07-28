@@ -7,6 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1Paw2ClSI4assylE7J7pEIdJJE7R4yVEf
 """
 
+import os
 import streamlit as st
 import noisereduce as nr
 import librosa
@@ -85,6 +86,9 @@ st.image(
 )
 
 st.title("Automatic Meeting Notes Generator")
+hug_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+together_token = os.getenv("TOGETHER_API_KEY")
+
 
 # Session state variables
 for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary"]:
