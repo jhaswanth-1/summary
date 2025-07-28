@@ -100,8 +100,20 @@ audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3"])
 
 if st.session_state.step == 1:
     if audio is not None:
-        with open("input.wav", "wb") as f:
-            f.write(audio.read())
+        MAX_MB = 300
+        if audio.size > MAX_MB * 1024 * 1024:
+            st.warning("This is a large file. Processing may take time or fail on low-memory devices.")
+
+        try:
+            with open("input.wav", "wb") as f:
+                while True:
+                    chunk = audio.read(1024 * 1024) 
+                    if not chunk:
+                        break
+                    f.write(chunk)
+        except Exception as e:
+            st.error(f"Error writing file: {e}")
+            st.stop()
         st.success("Audio uploaded successfully!")
 
         if st.button("Start Processing"):
