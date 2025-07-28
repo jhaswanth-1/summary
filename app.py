@@ -104,7 +104,7 @@ def load_whisper_model(name="tiny"):
     return whisper.load_model(name)
 
 @st.cache_resource(show_spinner=False)
-def load_whisperx_model(name="large-v2", device="cpu", compute_type="int8"):
+def load_whisperx_model(name="large-v2", device="cuda", compute_type="int8"):
     return whisperx.load_model(name, device=device, compute_type=compute_type)
 
 
