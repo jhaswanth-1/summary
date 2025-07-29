@@ -254,7 +254,7 @@ Here is the AI-generated summary to refine:
                     if not hug_token:
                         st.error("HUGGINGFACEHUB_API_TOKEN is not set in environment variables")
                         st.stop()
-                    device = "cpu"
+                    device = "cuda"
                     model_wx = load_whisperx_model(device=device)
                     diarization_model = DiarizationPipeline(use_auth_token=hug_token, device=device)
                     diarization_segments = diarization_model("denoised.wav")
