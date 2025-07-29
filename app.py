@@ -326,11 +326,11 @@ elif st.session_state.step == 3:
             pdf.section_title("AUTOMATED MEETING SUMMARY")
             summary_text = st.session_state.translated_summary or st.session_state.human_summary or "No summary available."
             pdf.section_body(summary_text)
-            pdf_bytes = pdf.output(dest='S').encode('latin1') 
+            pdf_output = pdf.output(dest='S').encode('latin1') 
             
             st.download_button(
                 label="Download Summary PDF",
-                data=pdf_buffer,
+                data=pdf_output,
                 file_name="meeting_summary.pdf",
                 mime='application/pdf'
             )
