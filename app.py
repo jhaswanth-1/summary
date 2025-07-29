@@ -159,7 +159,7 @@ if st.session_state.step == 1:
                     st.stop()
 
                 try:
-                    model = load_whisper_model("small")
+                    model = load_whisper_model("tiny")
                     transcription_result = model.transcribe(denoised_path, task="translate")
                     st.session_state.result = transcription_result
                     st.session_state.transcript = transcription_result.get("text", "")
