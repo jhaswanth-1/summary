@@ -327,10 +327,8 @@ elif st.session_state.step == 3:
             summary_text = st.session_state.translated_summary or st.session_state.human_summary or "No summary available."
             pdf.section_body(summary_text)
 
-            pdf_buffer = io.BytesIO()
-            pdf.output(pdf_buffer)
-            pdf_buffer.seek(0)
-
+            pdf_bytes = pdf.output(dest='S').encode('latin1') 
+            pdf_buffer = io.BytesIO(pdf_bytes)
             st.download_button(
                 label="Download Summary PDF",
                 data=pdf_buffer,
