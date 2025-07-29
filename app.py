@@ -88,8 +88,8 @@ st.image(
 st.title("Automatic Meeting Notes Generator")
 
 # Retrieve tokens safely
-hug_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-together_token = os.getenv("TOGETHER_API_KEY")
+hug_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN")
+together_token = os.environ.get("TOGETHER_API_KEY")
 
 # Initialize session state variables safely
 for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary"]:
