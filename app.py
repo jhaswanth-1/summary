@@ -146,7 +146,7 @@ if st.session_state.step == 1:
                     for start in range(0, len(audio_data), chunk_samples):
                         end = min(start + chunk_samples, len(audio_data))
                         curr_chunk = audio_data[start:end]
-                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample ,use_tensorflow=False)
+                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample )
                         denoised_audio_chunks.append(reduced_chunk)
 
                     denoised_audio = np.concatenate(denoised_audio_chunks)
