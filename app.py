@@ -90,7 +90,7 @@ st.image(
 st.title("Automatic Meeting Notes Generator")
 
 # Retrieve tokens safely using correct syntax
-hug_token = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+hug_token = st.secrets["HUGGINGFACE_TOKEN"]
 together_token = st.secrets["TOGETHER_API_KEY"]
 
 # Initialize session state variables safely
