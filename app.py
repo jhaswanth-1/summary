@@ -146,7 +146,7 @@ if st.session_state.step == 1:
                     for start in range(0, len(audio_data), chunk_samples):
                         end = min(start + chunk_samples, len(audio_data))
                         curr_chunk = audio_data[start:end]
-                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample)
+                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample ,use_tensorflow=False)
                         denoised_audio_chunks.append(reduced_chunk)
 
                     denoised_audio = np.concatenate(denoised_audio_chunks)
@@ -159,7 +159,7 @@ if st.session_state.step == 1:
                     st.stop()
 
                 try:
-                    model = load_whisper_model("tiny")
+                    model = load_whisper_model("small")
                     transcription_result = model.transcribe(denoised_path, task="translate")
                     st.session_state.result = transcription_result
                     st.session_state.transcript = transcription_result.get("text", "")
@@ -331,10 +331,7 @@ elif st.session_state.step == 3:
             pdf.section_title("AUTOMATED MEETING SUMMARY")
             summary_text = st.session_state.translated_summary or st.session_state.human_summary or "No summary available."
             pdf.section_body(summary_text)
-            pdf.output("meeting_summary.pdf", 'F')
-            with open("meeting_summary.pdf", "rb") as f:
-                pdf_bytes = f.read()
-
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
             
             st.download_button(
                 label="Download Summary PDF",
