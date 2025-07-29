@@ -9,6 +9,7 @@ Original file is located at
 import os
 import io
 import base64
+import tempfile
 from datetime import datetime
 
 import streamlit as st
@@ -22,6 +23,7 @@ from whisperx.diarize import DiarizationPipeline
 from fpdf import FPDF
 from openai import OpenAI
 from deep_translator import GoogleTranslator
+import torch
 
 # Page config
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
@@ -87,9 +89,9 @@ st.image(
 
 st.title("Automatic Meeting Notes Generator")
 
-# Retrieve tokens safely
-hug_token = st.secrets("HUGGINGFACEHUB_API_TOKEN")
-together_token = st.secrets("TOGETHER_API_KEY")
+# Retrieve tokens safely using correct syntax
+hug_token = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+together_token = st.secrets["TOGETHER_API_KEY"]
 
 # Initialize session state variables safely
 for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary"]:
@@ -98,7 +100,7 @@ for key in ["step", "transcript", "result", "diarization_text", "human_summary",
 if st.session_state.step is None:
     st.session_state.step = 1
 
-# Cache Whisper models for efficiency
+# Cache Whisper and WhisperX models for efficiency
 @st.cache_resource(show_spinner=False)
 def load_whisper_model(name="tiny"):
     return whisper.load_model(name)
@@ -107,12 +109,11 @@ def load_whisper_model(name="tiny"):
 def load_whisperx_model(name="large-v2", device="cuda", compute_type="int8"):
     return whisperx.load_model(name, device=device, compute_type=compute_type)
 
-
 # Step 1: Upload and transcribe
 if st.session_state.step == 1:
     audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3", "m4a"])
     if audio is not None:
-        # Safely get size (UploadedFile does not guaranteed have .size)
+        # Get size safely
         try:
             size_bytes = len(audio.getbuffer())
         except Exception:
@@ -120,13 +121,14 @@ if st.session_state.step == 1:
 
         MAX_MB = 300
         if size_bytes > MAX_MB * 1024 * 1024:
-            st.warning(f"This is a large file ({size_bytes / (1024*1024):.2f} MB). Processing may take time or fail on low-memory devices.")
+            st.warning(f"This is a large file ({size_bytes / (1024*1024):.2f} MB). Processing may take time or may fail on low-memory devices.")
 
         try:
             audio_bytes = audio.read()
-            # Write uploaded audio to disk once
-            with open("input.wav", "wb") as f:
-                f.write(audio_bytes)
+            # Use a unique temporary file for input audio
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_in:
+                tmp_in.write(audio_bytes)
+                input_path = tmp_in.name
         except Exception as e:
             st.error(f"Error writing uploaded audio to disk: {e}")
             st.stop()
@@ -136,8 +138,7 @@ if st.session_state.step == 1:
         if st.button("Start Processing"):
             with st.spinner("Reducing noise and transcribing..."):
                 try:
-                    # Load audio data with librosa
-                    audio_data, sample_rate = librosa.load("input.wav", sr=None)
+                    audio_data, sample_rate = librosa.load(input_path, sr=None)
                     chunk_samples = int(60 * sample_rate)  # 60 seconds chunks
                     noise_sample = audio_data[:sample_rate]  # first 1 sec as noise profile
 
@@ -149,14 +150,17 @@ if st.session_state.step == 1:
                         denoised_audio_chunks.append(reduced_chunk)
 
                     denoised_audio = np.concatenate(denoised_audio_chunks)
-                    sf.write("denoised.wav", denoised_audio, sample_rate)
+                    # Save denoised audio to a temp file
+                    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_dn:
+                        sf.write(tmp_dn.name, denoised_audio, sample_rate)
+                        denoised_path = tmp_dn.name
                 except Exception as e:
                     st.error(f"Noise reduction failed: {e}")
                     st.stop()
 
                 try:
                     model = load_whisper_model("tiny")
-                    transcription_result = model.transcribe("denoised.wav", task="translate")
+                    transcription_result = model.transcribe(denoised_path, task="translate")
                     st.session_state.result = transcription_result
                     st.session_state.transcript = transcription_result.get("text", "")
                     st.session_state.step = 2
@@ -202,7 +206,7 @@ Transcript:
             with st.spinner("Generating summary with LLaMA-3..."):
                 try:
                     if not together_token:
-                        st.error("TOGETHER_API_KEY is not set in environment variables")
+                        st.error("TOGETHER_API_KEY is not set in secrets.toml")
                         st.stop()
 
                     client = OpenAI(
@@ -244,7 +248,7 @@ Here is the AI-generated summary to refine:
                     st.session_state.step = 3
                     st.experimental_rerun()
                 except Exception as e:
-                    st.error(f"Summarisation failed: {str(e)}")
+                    st.error(f"Summarisation failed: {e}")
 
         st.markdown("---")
         st.subheader("Speaker Diarization")
@@ -252,12 +256,13 @@ Here is the AI-generated summary to refine:
             with st.spinner("Identifying speakers..."):
                 try:
                     if not hug_token:
-                        st.error("HUGGINGFACEHUB_API_TOKEN is not set in environment variables")
+                        st.error("HUGGINGFACEHUB_API_TOKEN is not set in secrets.toml")
                         st.stop()
-                    device = "cuda"
+
+                    device = "cuda" if torch.cuda.is_available() else "cpu"
                     model_wx = load_whisperx_model(device=device)
                     diarization_model = DiarizationPipeline(use_auth_token=hug_token, device=device)
-                    diarization_segments = diarization_model("denoised.wav")
+                    diarization_segments = diarization_model(denoised_path)
                     assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
 
                     diarization_text_lines = []
@@ -334,10 +339,7 @@ elif st.session_state.step == 3:
                 file_name="meeting_summary.pdf",
                 mime='application/pdf'
             )
-
-
-          
-           
+   
           # if st.session_state.diarization_text:
       #  st.subheader("Speaker Diarization Result")
        # st.text_area("", st.session_state.diarization_text, height=300)
