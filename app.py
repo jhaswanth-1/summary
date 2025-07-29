@@ -164,7 +164,7 @@ if st.session_state.step == 1:
                     st.session_state.result = transcription_result
                     st.session_state.transcript = transcription_result.get("text", "")
                     st.session_state.step = 2
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Transcription failed: {e}")
                     st.stop()
@@ -246,7 +246,7 @@ Here is the AI-generated summary to refine:
                     )
                     st.session_state.human_summary = human_response.choices[0].message.content
                     st.session_state.step = 3
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Summarisation failed: {e}")
 
@@ -292,7 +292,7 @@ elif st.session_state.step == 3:
                     translator = GoogleTranslator()
                     translated = translator.translate(st.session_state.human_summary, src='en', target=choose_lang)
                     st.session_state.translated_summary = translated
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Translation failed: {str(e)}")
 
