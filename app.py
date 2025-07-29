@@ -289,8 +289,8 @@ elif st.session_state.step == 3:
         if choose_lang != "None":
             if st.button("Translate Summary"):
                 try:
-                    translator = GoogleTranslator()
-                    translated = translator.translate(st.session_state.human_summary, src='en', target=choose_lang)
+                    translator = GoogleTranslator(source="en",target=choose_lang)
+                    translated = translator.translate(st.session_state.human_summary )
                     st.session_state.translated_summary = translated
                     st.rerun()
                 except Exception as e:
