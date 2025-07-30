@@ -32,50 +32,69 @@ st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 st.markdown(
     """
     <style>
-    .stApp {
-        background-color: #151515 !important;
-        min-height: 100vh;
-    }
-    .main > div {
-        background: rgba(30, 30, 30, 0.96);
-        border-radius: 16px;
-        box-shadow: 0 6px 24px 0 rgba(125, 111, 152, 0.11);
-        margin: 2rem auto;
-        padding: 2.2rem 2rem 1.5rem 2rem;
-        max-width: 650px;
-    }
-    h1, .stMarkdown h1 {
-        font-family: 'Playfair Display', serif;
-        background: linear-gradient(90deg, #d3cbb8 0%, #7952b3 94%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        font-size: 2.6rem;
-        font-weight: 700;
-        margin-top: 1.2em;
-        margin-bottom: 1.3em;
-        letter-spacing: 1px;
-    }
-    .stButton button {
-        color: #fff;
-        background: linear-gradient(90deg, #a770ef 0%, #f6d365 100%);
-        border: none;
-        border-radius: 8px;
-        padding: 0.5em 1.7em;
-        font-size: 1.1rem;
-        font-family: 'Segoe UI', Arial, sans-serif;
-        box-shadow: 0 2px 10px rgba(159,123,240,0.14);
-        transition: 0.3s all;
-    }
-    .stButton button:hover {
-        background: linear-gradient(90deg, #f6d365 0%, #a770ef 100%);
-        color: #2f2f2f;
-        box-shadow: 0 6px 16px rgba(159,123,240,0.20);
-        transform: translateY(-2px) scale(1.02);
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+
+.stApp {
+    background: linear-gradient(125deg, #22223b 0%, #4a4e69 100%) !important;
+    min-height: 100vh;
+}
+
+.main > div {
+    background: rgba(30, 30, 30, 0.85);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.24);
+    margin: 2.5rem auto;
+    padding: 2.6rem 2rem 1.8rem 2rem;
+    max-width: 650px;
+    backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,255,255,0.16);
+}
+
+h1, .stMarkdown h1 {
+    font-family: 'Playfair Display', serif;
+    background: linear-gradient(92deg, #f6d365 0%, #a770ef 50%, #7952b3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 12px rgba(127,127,200,0.12);
+    text-align: center;
+    font-size: 2.7rem;
+    font-weight: 800;
+    margin-top: 1.1em;
+    margin-bottom: 1.1em;
+    letter-spacing: 1.5px;
+}
+
+.stButton button {
+    color: #fff;
+    background: linear-gradient(93deg, #a770ef 0%, #f6d365 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.62em 2em;
+    font-size: 1.17rem;
+    box-shadow: 0 2px 16px rgba(180,120,255,0.17);
+    transition: all 0.25s cubic-bezier(.25,.8,.25,1);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.stButton button:hover {
+    background: linear-gradient(93deg, #f6d365 0%, #a770ef 100%);
+    color: #2f2f2f;
+    box-shadow: 0 10px 24px rgba(104,81,245,0.24);
+    transform: translateY(-2px) scale(1.03);
+}
+
+
+div[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    border-left: 6px solid #a770ef !important;
+    background: rgba(245, 245, 255, 0.1) !important;
+    box-shadow: 0 2px 14px rgba(127, 127, 200, 0.12) !important;
+    font-size: 1.1rem !important;
+}
+
+
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True
 )
@@ -87,14 +106,14 @@ st.image(
     caption="Your classic workspace"
 )
 
-st.title("Automatic Meeting Notes Generator")
+st.title("Automatic Meeting Notes Generator ")
 
 # Retrieve tokens safely using correct syntax
 hug_token = st.secrets["HUGGINGFACE_TOKEN"]
 together_token = st.secrets["TOGETHER_API_KEY"]
 
 # Initialize session state variables safely
-for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary"]:
+for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary", "denoised_path"]:
     st.session_state.setdefault(key, None)
 
 if st.session_state.step is None:
@@ -109,11 +128,10 @@ def load_whisper_model(name="tiny"):
 def load_whisperx_model(name="large-v2", device="cuda", compute_type="int8"):
     return whisperx.load_model(name, device=device, compute_type=compute_type)
 
-# Step 1: Upload and transcribe
+# STEP 1: Upload and transcribe
 if st.session_state.step == 1:
     audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3", "m4a"])
     if audio is not None:
-        # Get size safely
         try:
             size_bytes = len(audio.getbuffer())
         except Exception:
@@ -121,11 +139,10 @@ if st.session_state.step == 1:
 
         MAX_MB = 300
         if size_bytes > MAX_MB * 1024 * 1024:
-            st.warning(f"This is a large file ({size_bytes / (1024*1024):.2f} MB). Processing may take time or may fail on low-memory devices.")
+            st.warning(f"This is a large file ({size_bytes / (1024*1024):.2f} MB). Processing may take time or may fail on low-memory devices. ⏳")
 
         try:
             audio_bytes = audio.read()
-            # Use a unique temporary file for input audio
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_in:
                 tmp_in.write(audio_bytes)
                 input_path = tmp_in.name
@@ -135,32 +152,32 @@ if st.session_state.step == 1:
 
         st.success("Audio uploaded successfully!")
 
-        if st.button("Start Processing"):
-            with st.spinner("Reducing noise and transcribing..."):
+        if st.button("Start Processing "):
+            with st.spinner("Reducing noise 🤫 and transcribing... 💬"):
                 try:
                     audio_data, sample_rate = librosa.load(input_path, sr=None)
-                    chunk_samples = int(60 * sample_rate)  # 60 seconds chunks
-                    noise_sample = audio_data[:sample_rate]  # first 1 sec as noise profile
+                    chunk_samples = int(60 * sample_rate)
+                    noise_sample = audio_data[:sample_rate]
 
                     denoised_audio_chunks = []
                     for start in range(0, len(audio_data), chunk_samples):
                         end = min(start + chunk_samples, len(audio_data))
                         curr_chunk = audio_data[start:end]
-                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample )
+                        reduced_chunk = nr.reduce_noise(y=curr_chunk, sr=sample_rate, y_noise=noise_sample)
                         denoised_audio_chunks.append(reduced_chunk)
 
                     denoised_audio = np.concatenate(denoised_audio_chunks)
-                    # Save denoised audio to a temp file
                     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_dn:
                         sf.write(tmp_dn.name, denoised_audio, sample_rate)
                         denoised_path = tmp_dn.name
+                        st.session_state.denoised_path = denoised_path
                 except Exception as e:
                     st.error(f"Noise reduction failed: {e}")
                     st.stop()
 
                 try:
                     model = load_whisper_model("tiny")
-                    transcription_result = model.transcribe(denoised_path, task="translate")
+                    transcription_result = model.transcribe(st.session_state.denoised_path, task="translate")
                     st.session_state.result = transcription_result
                     st.session_state.transcript = transcription_result.get("text", "")
                     st.session_state.step = 2
@@ -169,12 +186,40 @@ if st.session_state.step == 1:
                     st.error(f"Transcription failed: {e}")
                     st.stop()
 
-# Step 2: Transcript display, summary generation, and diarization
+# STEP 2: Diarization (and transcript display)
 elif st.session_state.step == 2:
     if st.session_state.result:
         st.text_area("Detected language:", st.session_state.result.get("language", "Unknown"), height=30)
         st.text_area("Transcript", st.session_state.transcript, height=200)
 
+        st.subheader("Speaker Diarization")
+        if st.button("Run Speaker Diarization"):
+            with st.spinner("Identifying speakers 🗣️..."):
+                try:
+                    if not hug_token:
+                        st.error("HUGGINGFACEHUB_API_TOKEN is not set in secrets.toml 😅")
+                        st.stop()
+                    device = "cuda" if torch.cuda.is_available() else "cpu"
+                    model_wx = load_whisperx_model(device=device)
+                    diarization_model = DiarizationPipeline(use_auth_token=hug_token, device=device)
+                    diarization_segments = diarization_model(st.session_state.denoised_path)
+                    assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
+                    diarization_text_lines = []
+                    for seg in assign_speakers["segments"]:
+                        speaker_label = seg.get("speaker", "Unknown")
+                        diarization_text_lines.append(f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}")
+                    diarization_text = "\n".join(diarization_text_lines)
+                    st.session_state.diarization_text = diarization_text
+                    st.success("Speaker diarization complete! 💖")
+                    st.text_area("Speaker Diarized Transcript", diarization_text, height=250)
+                    st.session_state.step = 3
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Speaker diarization failed: {e}")
+
+# STEP 3: Summary Generation
+elif st.session_state.step == 3:
+    if st.session_state.result:
         st.subheader("Generate meeting summary")
         prompt1 = f"""
 You are a professional meeting summarizer and executive assistant.
@@ -203,12 +248,11 @@ Transcript:
 """
 
         if st.button("Generate Summary"):
-            with st.spinner("Generating summary with LLaMA-3..."):
+            with st.spinner("Generating summary with LLaMA-3 🧑‍💻🧑‍💻..."):
                 try:
                     if not together_token:
                         st.error("TOGETHER_API_KEY is not set in secrets.toml")
                         st.stop()
-
                     client = OpenAI(
                         base_url="https://api.together.xyz/v1",
                         api_key=together_token
@@ -245,52 +289,25 @@ Here is the AI-generated summary to refine:
                         temperature=0.3,
                     )
                     st.session_state.human_summary = human_response.choices[0].message.content
-                    st.session_state.step = 3
+                    st.session_state.step = 4
                     st.rerun()
                 except Exception as e:
                     st.error(f"Summarisation failed: {e}")
 
-        st.markdown("---")
-        st.subheader("Speaker Diarization")
-        if st.button("Run Speaker Diarization"):
-            with st.spinner("Identifying speakers..."):
-                try:
-                    if not hug_token:
-                        st.error("HUGGINGFACEHUB_API_TOKEN is not set in secrets.toml")
-                        st.stop()
-
-                    device = "cuda" if torch.cuda.is_available() else "cpu"
-                    model_wx = load_whisperx_model(device=device)
-                    diarization_model = DiarizationPipeline(use_auth_token=hug_token, device=device)
-                    diarization_segments = diarization_model(denoised_path)
-                    assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
-
-                    diarization_text_lines = []
-                    for seg in assign_speakers["segments"]:
-                        speaker_label = seg.get("speaker", "Unknown")
-                        diarization_text_lines.append(f"[{seg['start']:.2f} ~ {seg['end']:.2f}] Speaker {speaker_label}: {seg['text']}")
-                    diarization_text = "\n".join(diarization_text_lines)
-
-                    st.session_state.diarization_text = diarization_text
-                    st.success("Speaker diarization complete!")
-                    st.text_area("Speaker Diarized Transcript", diarization_text, height=250)
-                except Exception as e:
-                    st.error(f"Speaker diarization failed: {e}")
-
-# Step 3: Show humanized summary, translation & PDF download
-elif st.session_state.step == 3:
+# STEP 4: Show humanized summary, translation & PDF download
+elif st.session_state.step == 4:
     if st.session_state.human_summary:
-        st.success("Summarisation complete!")
+        st.success("Summarisation complete! 👍")
         st.subheader("Humanised Summary")
         st.text_area("Human-style Summary", st.session_state.human_summary, height=250)
 
-        choose_lang = st.selectbox("Choose a language for translation", ["None", "hi", "te", "ta", "kn", "mr", "bn"])
+        choose_lang = st.selectbox("Choose a language for translation 🔜 ", ["None", "hi", "te", "ta", "kn", "mr", "bn"])
 
         if choose_lang != "None":
             if st.button("Translate Summary"):
                 try:
                     translator = GoogleTranslator(source="en",target=choose_lang)
-                    translated = translator.translate(st.session_state.human_summary )
+                    translated = translator.translate(st.session_state.human_summary)
                     st.session_state.translated_summary = translated
                     st.rerun()
                 except Exception as e:
@@ -299,7 +316,6 @@ elif st.session_state.step == 3:
         if st.session_state.translated_summary:
             st.text_area("Translated Summary", st.session_state.translated_summary, height=200)
 
-        # PDF generator definition
         class PDF(FPDF):
             def header(self):
                 self.set_font("Helvetica", "B", 16)
@@ -309,7 +325,6 @@ elif st.session_state.step == 3:
                 self.set_text_color(100, 100, 100)
                 self.cell(0, 10, f"Generated on {datetime.now().strftime('%d %b %Y, %I:%M %p')}", ln=True, align="C")
                 self.ln(5)
-
             def section_title(self, title):
                 self.ln(10)
                 self.set_font("Helvetica", "B", 14)
@@ -318,7 +333,6 @@ elif st.session_state.step == 3:
                 self.set_draw_color(180, 180, 180)
                 self.line(10, self.get_y(), 200, self.get_y())
                 self.ln(4)
-
             def section_body(self, text):
                 self.set_font("Helvetica", "", 12)
                 self.set_text_color(50, 50, 50)
@@ -328,18 +342,18 @@ elif st.session_state.step == 3:
         if st.button("Download PDF"):
             pdf = PDF()
             pdf.add_page()
-            pdf.section_title("AUTOMATED MEETING SUMMARY")
+            pdf.section_title("AUTOMATED MEETING SUMMARY 🧑‍💻")
             summary_text = st.session_state.translated_summary or st.session_state.human_summary or "No summary available."
             pdf.section_body(summary_text)
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
-            
+
             st.download_button(
                 label="Download Summary PDF",
                 data=pdf_bytes,
                 file_name="meeting_summary.pdf",
                 mime='application/pdf'
             )
-   
+
           # if st.session_state.diarization_text:
       #  st.subheader("Speaker Diarization Result")
        # st.text_area("", st.session_state.diarization_text, height=300)
