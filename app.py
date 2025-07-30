@@ -344,7 +344,7 @@ elif st.session_state.step == 4:
         if st.button("Download PDF"):
             pdf = PDF()
             pdf.add_page()
-            pdf.section_title("AUTOMATED MEETING SUMMARY 🧑‍💻")
+            pdf.section_title("AUTOMATED MEETING SUMMARY ")
             summary_text = st.session_state.translated_summary or st.session_state.human_summary or "No summary available."
             pdf.section_body(summary_text)
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
