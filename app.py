@@ -125,7 +125,7 @@ def load_whisper_model(name="tiny"):
     return whisper.load_model(name)
 
 @st.cache_resource(show_spinner=False)
-def load_whisperx_model(name="large-v2", device="cuda", compute_type="int8"):
+def load_whisperx_model(name="medium", device="cuda", compute_type="int8"):
     return whisperx.load_model(name, device=device, compute_type=compute_type)
 
 # STEP 1: Upload and transcribe
@@ -202,6 +202,8 @@ elif st.session_state.step == 2:
                     device = "cuda" if torch.cuda.is_available() else "cpu"
                     model_wx = load_whisperx_model(device=device)
                     diarization_model = DiarizationPipeline(use_auth_token=hug_token, device=device)
+                    diarization_model.model.embedding_batch_size = 4
+                    diarization_model.model.segmentation_batch_size = 4
                     diarization_segments = diarization_model(st.session_state.denoised_path)
                     assign_speakers = whisperx.assign_word_speakers(diarization_segments, st.session_state.result)
                     diarization_text_lines = []
