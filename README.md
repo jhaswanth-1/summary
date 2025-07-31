@@ -24,16 +24,13 @@
 - 📄 One-click PDF download of summaries.
 - ✨ Modern dark theme UI with smooth gradients and emojis.
 
-## Demo
 
-- Add a screenshot or GIF here to show your app in action.
-
-## How It Works
+## How It Works (pipeline)
 
 1. Upload your meeting audio file (`.mp3`, `.wav`, `.m4a`).
 2. Transcription with noise reduction runs automatically.
 3. Speakers are diarized (who spoke what, and when).
-4. A Humanizied, structured meeting summary is generated.
+4. A Humanizied, structured meeting summary is generated  and it does two times summary for better output .
 5. Optional translation to your favourite language.
 6. Download your summary as a structured,formated PDF.
 
@@ -43,11 +40,11 @@
 
 -> **Requirements include:**
   -> Python 3.8+ and  less than 3.11 as other models are not available with that version python 
-  -> streamlit, librosa, noisereduce, numpy, soundfile
-  -> whisper, whisperx, pyannote.audio, fpdf, openai, deep-translator
-  -> torch (with CUDA/cuDNN for GPU users) others it will run on cpu
-  -> ffmpeg as a package
-  ->or you can download directly the requirements.txt
+  -> streamlit, librosa, noisereduce, numpy, soundfile .
+  -> whisper, whisperx, pyannote.audio, fpdf, openai, deep-translator .
+  -> torch (with CUDA/cuDNN for GPU users) others it will run on cpu .
+  -> ffmpeg as a package .
+  ->or you can download directly the requirements.txt and the packages .txt .
     
 
 - **Set up API keys in** .streamlit/secrets.toml file:
@@ -67,6 +64,19 @@
 ->  PDF appearance    =  Modify the " PDF " class in the code for headers, footers, or logos.
 -> Translation languages = Change options in the language dropdown.
 -> Model choice =Swap WhisperX models via " load_whisperx_model() " (e.g., "small" , " large-v2 ").
+
+## Accuracy
+-> Transcription and diarization are generally very accurate for clear audio.
+-> Model can confuse speakers when there is a lot of overlap or noise.
+-> Summaries are generally relevant but can miss context if transcription has errors.
+-> Translation is fast and good for major languages, but rare words may not be perfect.
+
+## Challenges
+-> High memory usage in diarization (especially with large audio or large models).
+-> Handling large file uploads in Streamlit.
+-> Keeping UI responsive and easy to useand while deploying the model adjusting the packages .
+-> Making sure results are accurate and that API keys are kept secure.
+-> Managing model inference time for summaries and translations.
 
 ## Troubleshooting Tips
 - **GPU issues:**
