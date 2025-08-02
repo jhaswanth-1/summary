@@ -25,10 +25,9 @@ from openai import OpenAI
 from deep_translator import GoogleTranslator
 import torch
 
-# Page config
 st.set_page_config(page_title="Meeting Notes Generator", layout="centered")
 
-# CSS styling
+# CSS
 st.markdown(
     """
     <style>
@@ -108,18 +107,18 @@ st.image(
 
 st.title("Automatic Meeting Notes Generator ")
 
-# Retrieve tokens safely using correct syntax
+#API TOKENS ...
 hug_token = st.secrets["HUGGINGFACE_TOKEN"]
 together_token = st.secrets["TOGETHER_API_KEY"]
 
-# Initialize session state variables safely
+# session state variables .....
 for key in ["step", "transcript", "result", "diarization_text", "human_summary", "translated_summary", "denoised_path"]:
     st.session_state.setdefault(key, None)
 
 if st.session_state.step is None:
     st.session_state.step = 1
 
-# Cache Whisper and WhisperX models for efficiency
+# doing  Cache Whisper and WhisperX models for efficiency ...
 @st.cache_resource(show_spinner=False)
 def load_whisper_model(name="tiny"):
     return whisper.load_model(name)
@@ -128,7 +127,7 @@ def load_whisper_model(name="tiny"):
 def load_whisperx_model(name="medium", device="cuda", compute_type="int8"):
     return whisperx.load_model(name, device=device, compute_type=compute_type)
 
-# STEP 1: Upload and transcribe
+# noise reduction and transcription .....
 if st.session_state.step == 1:
     audio = st.file_uploader("Upload a meeting audio file", type=["wav", "mp3", "m4a"])
     if audio is not None:
@@ -186,7 +185,7 @@ if st.session_state.step == 1:
                     st.error(f"Transcription failed: {e}")
                     st.stop()
 
-# STEP 2: Diarization (and transcript display)
+# Diarization (WHO SPOKE WHAT )
 elif st.session_state.step == 2:
     if st.session_state.result:
         st.text_area("Detected language:", st.session_state.result.get("language", "Unknown"), height=30)
@@ -219,7 +218,7 @@ elif st.session_state.step == 2:
                 except Exception as e:
                     st.error(f"Speaker diarization failed: {e}")
 
-# STEP 3: Summary Generation
+#  HUMANISED SUMMARY....
 elif st.session_state.step == 3:
     if st.session_state.result:
         st.subheader("Generate meeting summary")
@@ -296,7 +295,7 @@ Here is the AI-generated summary to refine:
                 except Exception as e:
                     st.error(f"Summarisation failed: {e}")
 
-# STEP 4: Show humanized summary, translation & PDF download
+# TRANSLATION AND DOWNLOAD PDF 
 elif st.session_state.step == 4:
     if st.session_state.human_summary:
         st.success("Summarisation complete! 👍")
@@ -356,6 +355,3 @@ elif st.session_state.step == 4:
                 mime='application/pdf'
             )
 
-          # if st.session_state.diarization_text:
-      #  st.subheader("Speaker Diarization Result")
-       # st.text_area("", st.session_state.diarization_text, height=300)
